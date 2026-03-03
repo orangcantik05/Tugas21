@@ -1,0 +1,56 @@
+name: Automation Tests (API & UI) - Java Gradle
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Setup Java (sesuaikan versi dengan proyek Anda)
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'               # Bisa 8, 11, 17, 21
+          distribution: 'temurin'
+          cache: gradle
+
+      # Beri hak eksekusi pada Gradle Wrapper
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      # Opsional: Install Chrome untuk UI testing
+      - name: Install Chrome
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable
+
+      # Opsional: Setup ChromeDriver (sesuaikan versi)
+      - name: Setup ChromeDriver
+        uses: nanasess/setup-chromedriver@v2
+        with:
+          chromedriver-version: '120.0.6099.109'
+
+      # Jalankan tes dengan Gradle
+      # Jika ada task terpisah untuk API dan UI, gunakan: ./gradlew testApi testUi
+      - name: Run tests
+        run: ./gradlew clean test --no-daemon
+        continue-on-error: true   # Tetap lanjut ke upload laporan meskipun ada tes gagal
+
+      # Upload laporan tes (selalu dijalankan)
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-reports
+          path: |
+            build/reports/tests/
+            build/test-results/
+            # Tambahkan path folder laporan lain jika diperlukan (misal: build/allure-results)
